@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>kitty.music</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#0B0B0F;
+    --surface:#16151C;
+    --surface-2:#1E1C25;
+    --border:#272530;
+    --text:#F5F3F0;
+    --muted:#8C8894;
+    --accent:#FF3D8A;
+    --accent-dim:#7A2042;
+    --lime:#C8FF4D;
+    --radius:14px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent); color:#000; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#2c2a35; border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover{ background:#3a3744; }
+
+  h1,h2,h3,.display{
+    font-family:'Archivo Expanded', sans-serif;
+    letter-spacing:-0.01em;
+  }
+
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input{ font-family:inherit; }
+  a{ color:inherit; text-decoration:none; }
+
+  :focus-visible{ outline:2px solid var(--lime); outline-offset:2px; border-radius:6px; }
+
+  #root{ width:100%; height:100vh; }
+
+  /* ===== AUTH SCREEN ===== */
+  .auth-wrap{
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse 700px 500px at 18% 8%, rgba(255,61,138,0.18), transparent 60%),
+      radial-gradient(ellipse 600px 600px at 90% 90%, rgba(200,255,77,0.08), transparent 60%),
+      var(--bg);
+    position:relative;
+  }
+  .auth-card{
+    width:380px;
+    background:rgba(22,21,28,0.7);
+    backdrop-filter:blur(20px);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:40px 36px 32px;
+    position:relative;
+    animation:cardIn .5s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(14px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .auth-logo{
+    display:flex; align-items:center; gap:10px; margin-bottom:28px;
+  }
+  .auth-logo .mark{ width:34px; height:34px; }
+  .auth-logo .wordmark{ font-size:20px; font-weight:800; }
+  .auth-logo .wordmark .dot{ color:var(--accent); }
+
+  .auth-title{ font-size:26px; font-weight:800; margin-bottom:6px; }
+  .auth-sub{ color:var(--muted); font-size:13.5px; margin-bottom:26px; line-height:1.5; }
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:7px; }
+  .field input{
+    width:100%; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px; color:var(--text); font-size:14px;
+    transition:border-color .15s, background .15s;
+  }
+  .field input:focus{ border-color:var(--accent); background:#221f29; outline:none; }
+  .field input::placeholder{ color:#5c5966; }
+
+  .auth-submit{
+    width:100%; background:var(--accent); color:#fff; font-weight:700; font-size:14.5px;
+    padding:13px; border-radius:10px; margin-top:6px; margin-bottom:18px;
+    transition:transform .15s, background .15s, box-shadow .15s;
+    box-shadow:0 8px 20px -8px rgba(255,61,138,0.5);
+  }
+  .auth-submit:hover{ background:#ff5599; transform:translateY(-1px); }
+  .auth-submit:active{ transform:translateY(0); }
+
+  .auth-switch{ text-align:center; font-size:13px; color:var(--muted); }
+  .auth-switch button{ color:var(--lime); font-weight:600; }
+  .auth-switch button:hover{ text-decoration:underline; }
+
+  .auth-error{
+    background:rgba(255,61,138,0.1); border:1px solid rgba(255,61,138,0.35);
+    color:#ff8cb8; font-size:12.5px; padding:9px 12px; border-radius:8px; margin-bottom:14px;
+  }
+
+  .guest-row{ display:flex; align-items:center; gap:10px; margin:16px 0; }
+  .guest-row .line{ flex:1; height:1px; background:var(--border); }
+  .guest-row span{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .guest-btn{
+    width:100%; border:1px solid var(--border); border-radius:10px; padding:11px;
+    font-size:13.5px; font-weight:600; color:var(--text); background:var(--surface-2);
+    transition:border-color .15s;
+  }
+  .guest-btn:hover{ border-color:var(--muted); }
+
+  /* ===== APP SHELL ===== */
+  .app{
+    height:100vh; display:grid;
+    grid-template-columns:240px 1fr;
+    grid-template-rows:1fr 88px;
+    background:var(--bg);
+  }
+
+  /* Sidebar */
+  .sidebar{
+    grid-row:1/2; border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:20px 14px;
+    background:#0E0D12;
+  }
+  .brand{ display:flex; align-items:center; gap:9px; padding:0 8px 24px; }
+  .brand .mark{ width:28px; height:28px; flex-shrink:0; }
+  .brand .wordmark{ font-size:17px; font-weight:800; }
+  .brand .wordmark .dot{ color:var(--accent); }
+
+  .nav-section{ margin-bottom:18px; }
+  .nav-item{
+    display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:9px;
+    font-size:14px; font-weight:600; color:var(--muted); width:100%; text-align:left;
+    transition:background .12s, color .12s;
+  }
+  .nav-item svg{ width:18px; height:18px; flex-shrink:0; }
+  .nav-item:hover{ color:var(--text); background:var(--surface); }
+  .nav-item.active{ color:var(--text); background:var(--surface); }
+  .nav-item.active svg{ color:var(--accent); }
+
+  .sidebar-divider{ height:1px; background:var(--border); margin:8px 8px 16px; }
+
+  .upload-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--accent); color:#fff; font-weight:700; font-size:13px;
+    padding:11px; border-radius:10px; margin:0 8px 18px;
+    transition:transform .15s, background .15s;
+  }
+  .upload-btn:hover{ background:#ff5599; transform:translateY(-1px); }
+  .upload-btn svg{ width:16px; height:16px; }
+
+  .playlists-label{
+    font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.06em; padding:0 12px; margin-bottom:8px;
+  }
+  .playlist-list{ flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:1px; }
+  .playlist-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 12px; border-radius:8px; font-size:13.5px; color:var(--muted);
+    width:100%; text-align:left; transition:background .12s, color .12s;
+  }
+  .playlist-item:hover{ background:var(--surface); color:var(--text); }
+  .playlist-item.active{ background:var(--surface); color:var(--text); }
+  .playlist-item .pname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .playlist-item .pcount{ font-size:11px; color:#5c5966; flex-shrink:0; }
+
+  .sidebar-user{
+    display:flex; align-items:center; gap:10px; padding:10px 8px; margin-top:10px;
+    border-top:1px solid var(--border); padding-top:16px;
+  }
+  .avatar{
+    width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),#7a2042);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;
+  }
+  .sidebar-user .uinfo{ flex:1; min-width:0; }
+  .sidebar-user .uname{ font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sidebar-user .uplan{ font-size:11px; color:var(--muted); }
+  .logout-btn{ color:var(--muted); flex-shrink:0; }
+  .logout-btn:hover{ color:var(--accent); }
+  .logout-btn svg{ width:16px; height:16px; }
+
+  /* Main content */
+  .main{
+    grid-row:1/2; overflow-y:auto; position:relative;
+    background:linear-gradient(180deg, rgba(255,61,138,0.07), transparent 320px);
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px 0; position:sticky; top:0; z-index:5;
+  }
+  .search-box{
+    display:flex; align-items:center; gap:9px; background:var(--surface);
+    border:1px solid var(--border); border-radius:24px; padding:9px 16px; width:320px;
+  }
+  .search-box svg{ width:16px; height:16px; color:var(--muted); flex-shrink:0; }
+  .search-box input{ background:none; border:none; color:var(--text); font-size:13.5px; width:100%; outline:none; }
+  .search-box input::placeholder{ color:var(--muted); }
+
+  .content{ padding:24px 32px 40px; }
+
+  .page-title{ font-size:32px; font-weight:800; margin-bottom:4px; }
+  .page-sub{ color:var(--muted); font-size:13.5px; margin-bottom:28px; }
+
+  /* Empty state */
+  .empty-state{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:80px 20px; border:1.5px dashed var(--border); border-radius:18px;
+    transition:border-color .15s, background .15s;
+  }
+  .empty-state.dragging{ border-color:var(--accent); background:rgba(255,61,138,0.05); }
+  .empty-state svg{ width:52px; height:52px; color:var(--muted); margin-bottom:18px; }
+  .empty-state h3{ font-size:18px; font-weight:700; margin-bottom:6px; }
+  .empty-state p{ color:var(--muted); font-size:13.5px; max-width:320px; line-height:1.6; margin-bottom:20px; }
+
+  /* Track rows */
+  .track-table{ display:flex; flex-direction:column; }
+  .track-head{
+    display:grid; grid-template-columns:32px 1fr 140px 110px 70px;
+    gap:14px; padding:0 14px 10px; border-bottom:1px solid var(--border);
+    font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;
+  }
+  .track-row{
+    display:grid; grid-template-columns:32px 1fr 140px 110px 70px;
+    gap:14px; align-items:center; padding:10px 14px; border-radius:10px;
+    transition:background .12s; position:relative;
+  }
+  .track-row:hover{ background:var(--surface); }
+  .track-row.playing{ background:rgba(255,61,138,0.08); }
+  .track-num{ color:var(--muted); font-size:13px; text-align:center; }
+  .track-row.playing .track-num{ color:var(--accent); }
+  .track-row .play-overlay{ display:none; }
+  .track-row:hover .track-num{ display:none; }
+  .track-row:hover .play-overlay{ display:flex; align-items:center; justify-content:center; }
+  .play-overlay button{ color:var(--text); }
+  .play-overlay svg{ width:15px; height:15px; }
+
+  .track-info{ display:flex; align-items:center; gap:12px; min-width:0; cursor:pointer; }
+  .track-cover{
+    width:40px; height:40px; border-radius:7px; flex-shrink:0;
+    background:linear-gradient(135deg,var(--surface-2),var(--surface)); 
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .track-cover svg{ width:18px; height:18px; color:var(--muted); }
+  .track-titles{ min-width:0; }
+  .track-name{ font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .track-row.playing .track-name{ color:var(--accent); }
+  .track-artist{ font-size:12.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .track-album{ font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .track-duration{ font-size:13px; color:var(--muted); text-align:right; }
+  .track-actions{ display:flex; align-items:center; justify-content:flex-end; gap:6px; opacity:0; transition:opacity .12s; }
+  .track-row:hover .track-actions{ opacity:1; }
+  .track-actions button{ color:var(--muted); padding:4px; }
+  .track-actions button:hover{ color:var(--accent); }
+  .track-actions svg{ width:16px; height:16px; }
+
+  /* Cards grid (home) */
+  .section-row{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; margin-top:32px; }
+  .section-row h2{ font-size:18px; font-weight:800; }
+  .section-row:first-of-type{ margin-top:0; }
+  .card-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:16px; }
+  .pcard{
+    background:var(--surface); border-radius:12px; padding:14px; cursor:pointer;
+    transition:background .15s, transform .15s; position:relative;
+  }
+  .pcard:hover{ background:var(--surface-2); transform:translateY(-2px); }
+  .pcard-art{
+    width:100%; aspect-ratio:1; border-radius:8px; margin-bottom:12px;
+    background:linear-gradient(135deg, var(--accent-dim), var(--surface-2));
+    display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+  }
+  .pcard-art svg{ width:30px; height:30px; color:rgba(255,255,255,0.6); }
+  .pcard-play{
+    position:absolute; bottom:8px; right:8px; width:36px; height:36px; border-radius:50%;
+    background:var(--accent); display:flex; align-items:center; justify-content:center;
+    opacity:0; transform:translateY(6px); transition:opacity .15s, transform .15s;
+    box-shadow:0 6px 16px -4px rgba(0,0,0,0.5);
+  }
+  .pcard:hover .pcard-play{ opacity:1; transform:translateY(0); }
+  .pcard-play svg{ width:15px; height:15px; color:#fff; }
+  .pcard-name{ font-size:13.5px; font-weight:700; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pcard-meta{ font-size:11.5px; color:var(--muted); }
+
+  /* Player bar */
+  .player{
+    grid-column:1/3; grid-row:2/3; border-top:1px solid var(--border);
+    background:#0E0D12; display:grid; grid-template-columns:280px 1fr 280px;
+    align-items:center; padding:0 18px; gap:20px;
+  }
+  .player-track{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .player-cover{
+    width:54px; height:54px; border-radius:8px; flex-shrink:0;
+    background:linear-gradient(135deg,var(--surface-2),var(--surface));
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .player-cover svg{ width:22px; height:22px; color:var(--muted); }
+  .player-meta{ min-width:0; }
+  .player-meta .pname{ font-size:13.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .player-meta .partist{ font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .player-empty{ font-size:13px; color:var(--muted); }
+
+  .player-center{ display:flex; flex-direction:column; align-items:center; gap:8px; max-width:560px; margin:0 auto; width:100%; }
+  .player-controls{ display:flex; align-items:center; gap:18px; }
+  .ctrl-btn{ color:var(--muted); transition:color .12s, transform .12s; }
+  .ctrl-btn:hover{ color:var(--text); }
+  .ctrl-btn.active{ color:var(--accent); }
+  .ctrl-btn svg{ width:17px; height:17px; }
+  .play-btn{
+    width:34px; height:34px; border-radius:50%; background:var(--text); color:var(--bg);
+    display:flex; align-items:center; justify-content:center; transition:transform .12s;
+  }
+  .play-btn:hover{ transform:scale(1.06); }
+  .play-btn svg{ width:15px; height:15px; }
+  .play-btn:disabled{ opacity:.3; pointer-events:none; }
+
+  .scrub-row{ display:flex; align-items:center; gap:9px; width:100%; }
+  .time{ font-size:11px; color:var(--muted); width:36px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+  .time.right{ text-align:right; }
+
+  .waveform{
+    flex:1; height:28px; display:flex; align-items:center; gap:2px; cursor:pointer; position:relative;
+  }
+  .waveform .bar{ flex:1; background:#3a3744; border-radius:2px; min-width:2px; transition:background .1s; }
+  .waveform .bar.played{ background:var(--accent); }
+  .waveform:hover .bar{ background:#4a4655; }
+  .waveform:hover .bar.played{ background:#ff5599; }
+
+  .player-right{ display:flex; align-items:center; justify-content:flex-end; gap:14px; }
+  .vol-row{ display:flex; align-items:center; gap:8px; width:110px; }
+  .vol-row svg{ width:16px; height:16px; color:var(--muted); flex-shrink:0; }
+  .vol-slider{ -webkit-appearance:none; width:100%; height:4px; border-radius:4px; background:#3a3744; outline:none; }
+  .vol-slider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--text); cursor:pointer; }
+  .vol-slider::-moz-range-thumb{ width:11px; height:11px; border-radius:50%; background:var(--text); border:none; cursor:pointer; }
+
+  .toast{
+    position:fixed; bottom:108px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:var(--surface-2); border:1px solid var(--border); padding:11px 18px;
+    border-radius:10px; font-size:13px; font-weight:600; opacity:0; transition:opacity .2s, transform .2s;
+    pointer-events:none; z-index:50; box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center;
+    z-index:100; backdrop-filter:blur(4px);
+  }
+  .modal{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px;
+    width:360px; animation:cardIn .25s cubic-bezier(.16,1,.3,1);
+  }
+  .modal h3{ font-size:17px; font-weight:800; margin-bottom:16px; }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .modal-actions button{ flex:1; padding:10px; border-radius:9px; font-size:13.5px; font-weight:700; }
+  .modal-cancel{ background:var(--surface-2); color:var(--text); }
+  .modal-confirm{ background:var(--accent); color:#fff; }
+
+  .hidden-input{ display:none; }
+
+  @media (max-width:880px){
+    .app{ grid-template-columns:72px 1fr; }
+    .sidebar{ padding:20px 8px; }
+    .brand .wordmark, .nav-item span, .upload-btn span, .playlists-label, .playlist-list, .sidebar-user .uinfo{ display:none; }
+    .brand{ justify-content:center; padding:0 0 24px; }
+    .nav-item{ justify-content:center; }
+    .upload-btn{ padding:11px; }
+    .sidebar-user{ justify-content:center; }
+    .player{ grid-template-columns:60px 1fr 0; }
+    .player-right{ display:none; }
+    .player-meta{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+/* ---------- ICONS ---------- */
+const Icon = {
+  Logo: (p) => (
+    <svg viewBox="0 0 32 32" fill="none" {...p}>
+      <path d="M16 4C9.4 4 4 9.4 4 16c0 5.2 3.3 9.6 8 11.3l1-3.3c-3.5-1.4-6-4.8-6-8 0-5.2 4.2-9.4 9-9.4s9 4.2 9 9.4c0 3.2-2.5 6.6-6 8l1 3.3c4.7-1.7 8-6.1 8-11.3 0-6.6-5.4-12-12-12z" fill="currentColor"/>
+      <path d="M11.5 6.5L9 2l4 2.5z" fill="currentColor"/>
+      <path d="M20.5 6.5L23 2l-4 2.5z" fill="currentColor"/>
+      <circle cx="13" cy="16" r="1.6" fill="#0B0B0F"/>
+      <circle cx="19" cy="16" r="1.6" fill="#0B0B0F"/>
+    </svg>
+  ),
+  Home: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M3 11l9-8 9 8M5 10v10h14V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Search: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>),
+  Library: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><rect x="3" y="3" width="7" height="18" rx="1.5" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="18" rx="1.5" stroke="currentColor" strokeWidth="2"/></svg>),
+  Plus: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/></svg>),
+  Upload: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 16V4M7 9l5-5 5 5M4 20h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Music: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2"/><circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="2"/></svg>),
+  Play: (p)=>(<svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M6 4l15 8-15 8V4z"/></svg>),
+  Pause: (p)=>(<svg viewBox="0 0 24 24" fill="currentColor" {...p}><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg>),
+  Prev: (p)=>(<svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M6 4h2v16H6zM20 5v14L9 12z"/></svg>),
+  Next: (p)=>(<svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M18 4h-2v16h2zM4 5v14l11-7z"/></svg>),
+  Shuffle: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M3 7h4l8 10h4M3 17h4l3.5-4.5M14.5 7H21M21 7l-3-3M21 7l-3 3M21 17l-3 3M21 17l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Repeat: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Vol: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>),
+  VolMute: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>),
+  Trash: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  PlusCircle: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>),
+  LogOut: (p)=>(<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+};
+
+/* ---------- HELPERS ---------- */
+const fmtTime = (s) => {
+  if (!isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+};
+const uid = () => Math.random().toString(36).slice(2,10);
+const initials = (name) => (name||'?').trim().slice(0,2).toUpperCase();
+
+// deterministic pseudo-waveform bars per track id, so it looks alive but stable
+function waveformFor(id, n=64){
+  let seed = 0;
+  for (let i=0;i<id.length;i++) seed = (seed*31 + id.charCodeAt(i)) % 100000;
+  const bars = [];
+  for(let i=0;i<n;i++){
+    seed = (seed*9301+49297) % 233280;
+    const r = seed/233280;
+    bars.push(18 + r*82);
+  }
+  return bars;
+}
+
+/* ---------- USER STORE (in-memory, per-session) ---------- */
+function useAccounts(){
+  const [accounts, setAccounts] = useState({}); // email -> {email, name, password}
+  const register = (name, email, password) => {
+    if (accounts[email]) return { ok:false, error:'An account with that email already exists.' };
+    const next = { ...accounts, [email]: { name, email, password } };
+    setAccounts(next);
+    return { ok:true };
+  };
+  const login = (email, password) => {
+    const acc = accounts[email];
+    if (!acc) return { ok:false, error:'No account found with that email.' };
+    if (acc.password !== password) return { ok:false, error:'Incorrect password.' };
+    return { ok:true, user:{ name:acc.name, email:acc.email } };
+  };
+  return { register, login };
+}
+
+/* ---------- AUTH SCREEN ---------- */
+function AuthScreen({ onAuth, accounts }){
+  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const submit = (e) => {
+    e.preventDefault();
+    setError('');
+    if (mode === 'signup'){
+      if (!name.trim()) return setError('Tell us what to call you.');
+      if (!email.includes('@')) return setError('Enter a valid email.');
+      if (password.length < 4) return setError('Password should be at least 4 characters.');
+      const res = accounts.register(name.trim(), email.trim().toLowerCase(), password);
+      if (!res.ok) return setError(res.error);
+      onAuth({ name:name.trim(), email:email.trim().toLowerCase() });
+    } else {
+      const res = accounts.login(email.trim().toLowerCase(), password);
+      if (!res.ok) return setError(res.error);
+      onAuth(res.user);
+    }
+  };
+
+  const guest = () => onAuth({ name:'Guest', email:'guest@kitty.music' });
+
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <Icon.Logo className="mark" style={{color:'var(--accent)'}}/>
+          <div className="wordmark">kitty<span className="dot">.</span>music</div>
+        </div>
+        <div className="auth-title">{mode === 'login' ? 'Welcome back' : 'Create your account'}</div>
+        <div className="auth-sub">{mode === 'login' ? 'Log in to get back to your sound.' : 'Upload your own tracks and build a library that\u2019s actually yours.'}</div>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={submit}>
+          {mode === 'signup' && (
+            <div className="field">
+              <label>Name</label>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="What should we call you?" autoFocus />
+            </div>
+          )}
+          <div className="field">
+            <label>Email</label>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" />
+          </div>
+          <button type="submit" className="auth-submit">{mode === 'login' ? 'Log in' : 'Sign up'}</button>
+        </form>
+
+        <div className="auth-switch">
+          {mode === 'login' ? (
+            <>New here? <button onClick={()=>{setMode('signup'); setError('');}}>Create an account</button></>
+          ) : (
+            <>Already have an account? <button onClick={()=>{setMode('login'); setError('');}}>Log in</button></>
+          )}
+        </div>
+
+        <div className="guest-row"><div className="line"/><span>or</span><div className="line"/></div>
+        <button className="guest-btn" onClick={guest}>Continue as guest</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- WAVEFORM SCRUBBER ---------- */
+function Waveform({ trackId, progress, onSeek }){
+  const ref = useRef(null);
+  const bars = useMemo(()=> trackId ? waveformFor(trackId) : Array.from({length:64},()=>30), [trackId]);
+  const playedCount = Math.round(progress * bars.length);
+
+  const handleClick = (e) => {
+    if (!onSeek || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    onSeek(ratio);
+  };
+
+  return (
+    <div className="waveform" ref={ref} onClick={handleClick}>
+      {bars.map((h,i) => (
+        <div key={i} className={"bar" + (i < playedCount ? " played" : "")} style={{height:`${h}%`}} />
+      ))}
+    </div>
+  );
+}
+
+/* ---------- MAIN APP ---------- */
+function App(){
+  const accounts = useAccounts();
+  const [user, setUser] = useState(null);
+
+  const [tracks, setTracks] = useState([]); // {id, name, artist, album, duration, url, addedAt}
+  const [playlists, setPlaylists] = useState([]); // {id, name, trackIds:[]}
+  const [activeView, setActiveView] = useState({ type:'home' }); // home | library | playlist
+  const [query, setQuery] = useState('');
+
+  const [queue, setQueue] = useState([]); // array of track ids, current play context
+  const [queueIndex, setQueueIndex] = useState(-1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0); // 0..1
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.8);
+  const [muted, setMuted] = useState(false);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState('off'); // off | all | one
+  const [dragging, setDragging] = useState(false);
+  const [toast, setToast] = useState('');
+  const [newPlaylistModal, setNewPlaylistModal] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [addToPlaylistTrack, setAddToPlaylistTrack] = useState(null);
+
+  const audioRef = useRef(new Audio());
+  const fileInputRef = useRef(null);
+  const toastTimer = useRef(null);
+
+  const currentTrack = queueIndex >= 0 ? tracks.find(t => t.id === queue[queueIndex]) : null;
+
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(()=> setToast(''), 2200);
+  };
+
+  /* ---- audio element wiring ---- */
+  useEffect(() => {
+    const audio = audioRef.current;
+    const onTime = () => {
+      setCurrentTime(audio.currentTime);
+      setDuration(audio.duration || 0);
+      setProgress(audio.duration ? audio.currentTime / audio.duration : 0);
+    };
+    const onEnd = () => handleEnded();
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('loadedmetadata', onTime);
+    audio.addEventListener('ended', onEnd);
+    return () => {
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('loadedmetadata', onTime);
+      audio.removeEventListener('ended', onEnd);
+    };
+  }, [queue, queueIndex, repeat, shuffle, tracks]);
+
+  useEffect(() => {
+    audioRef.current.volume = muted ? 0 : volume;
+  }, [volume, muted]);
+
+  const playTrackAt = (idx, q) => {
+    const list = q || queue;
+    if (idx < 0 || idx >= list.length) return;
+    const track = tracks.find(t => t.id === list[idx]);
+    if (!track) return;
+    setQueueIndex(idx);
+    const audio = audioRef.current;
+    if (audio.src !== track.url) {
+      audio.src = track.url;
+    }
+    audio.currentTime = 0;
+    audio.play().catch(()=>{});
+    setIsPlaying(true);
+  };
+
+  const playList = (trackIds, startId) => {
+    if (!trackIds.length) return;
+    setQueue(trackIds);
+    const startIdx = startId ? trackIds.indexOf(startId) : 0;
+    playTrackAt(startIdx === -1 ? 0 : startIdx, trackIds);
+  };
+
+  const togglePlayPause = () => {
+    const audio = audioRef.current;
+    if (!currentTrack) {
+      if (tracks.length) playList(tracks.map(t=>t.id));
+      return;
+    }
+    if (isPlaying) { audio.pause(); setIsPlaying(false); }
+    else { audio.play().catch(()=>{}); setIsPlaying(true); }
+  };
+
+  const handleEnded = () => {
+    if (repeat === 'one') {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(()=>{});
+      return;
+    }
+    goNext();
+  };
+
+  const goNext = () => {
+    if (!queue.length) return;
+    let nextIdx;
+    if (shuffle) {
+      nextIdx = Math.floor(Math.random() * queue.length);
+    } else {
+      nextIdx = queueIndex + 1;
+      if (nextIdx >= queue.length) {
+        if (repeat === 'all') nextIdx = 0;
+        else { setIsPlaying(false); return; }
+      }
+    }
+    playTrackAt(nextIdx);
+  };
+
+  const goPrev = () => {
+    if (!queue.length) return;
+    if (audioRef.current.currentTime > 3) {
+      audioRef.current.currentTime = 0;
+      return;
+    }
+    let prevIdx = queueIndex - 1;
+    if (prevIdx < 0) prevIdx = repeat === 'all' ? queue.length - 1 : 0;
+    playTrackAt(prevIdx);
+  };
+
+  const seekTo = (ratio) => {
+    const audio = audioRef.current;
+    if (audio.duration) {
+      audio.currentTime = ratio * audio.duration;
+    }
+  };
+
+  /* ---- file upload ---- */
+  const processFiles = (fileList) => {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('audio/') || /\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(f.name));
+    if (!files.length) { showToast('No audio files found in that drop.'); return; }
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+      const rawName = file.name.replace(/\.[^/.]+$/, '');
+      let artist = 'Unknown artist', title = rawName;
+      if (rawName.includes(' - ')) {
+        const parts = rawName.split(' - ');
+        artist = parts[0].trim();
+        title = parts.slice(1).join(' - ').trim();
+      }
+      const tempAudio = new Audio(url);
+      const id = uid();
+      tempAudio.addEventListener('loadedmetadata', () => {
+        setTracks(prev => prev.map(t => t.id === id ? { ...t, duration: tempAudio.duration } : t));
+      });
+      setTracks(prev => [...prev, {
+        id, name:title, artist, album:'Uploaded', duration:0, url, addedAt:Date.now()
+      }]);
+    });
+    showToast(`Added ${files.length} track${files.length>1?'s':''} to your library.`);
+  };
+
+  const onFileInputChange = (e) => {
+    if (e.target.files?.length) processFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  /* ---- playlists ---- */
+  const createPlaylist = () => {
+    const name = newPlaylistName.trim() || `Playlist ${playlists.length + 1}`;
+    const pl = { id: uid(), name, trackIds: [] };
+    setPlaylists(prev => [...prev, pl]);
+    setNewPlaylistModal(false);
+    setNewPlaylistName('');
+    showToast(`Created "${name}"`);
+  };
+
+  const addTrackToPlaylist = (playlistId, trackId) => {
+    setPlaylists(prev => prev.map(p => p.id === playlistId
+      ? (p.trackIds.includes(trackId) ? p : { ...p, trackIds: [...p.trackIds, trackId] })
+      : p));
+    setAddToPlaylistTrack(null);
+    showToast('Added to playlist.');
+  };
+
+  const removeTrack = (trackId) => {
+    setTracks(prev => prev.filter(t => t.id !== trackId));
+    setPlaylists(prev => prev.map(p => ({ ...p, trackIds: p.trackIds.filter(id => id !== trackId) })));
+    if (currentTrack?.id === trackId) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const removeFromPlaylist = (playlistId, trackId) => {
+    setPlaylists(prev => prev.map(p => p.id === playlistId ? { ...p, trackIds: p.trackIds.filter(id => id !== trackId) } : p));
+  };
+
+  /* ---- drag & drop on whole window ---- */
+  useEffect(() => {
+    if (!user) return;
+    const onDragOver = (e) => { e.preventDefault(); setDragging(true); };
+    const onDragLeave = (e) => { if (e.target === document.body) setDragging(false); };
+    const onDrop = (e) => {
+      e.preventDefault(); setDragging(false);
+      if (e.dataTransfer?.files?.length) processFiles(e.dataTransfer.files);
+    };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragleave', onDragLeave);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragleave', onDragLeave);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, [user]);
+
+  if (!user) return <AuthScreen onAuth={setUser} accounts={accounts} />;
+
+  const filteredTracks = query.trim()
+    ? tracks.filter(t => (t.name + t.artist + t.album).toLowerCase().includes(query.toLowerCase()))
+    : null;
+
+  const activePlaylist = activeView.type === 'playlist' ? playlists.find(p => p.id === activeView.id) : null;
+  const viewTracks = activePlaylist ? tracks.filter(t => activePlaylist.trackIds.includes(t.id)) : tracks;
+
+  return (
+    <div className="app">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="brand">
+          <Icon.Logo className="mark" style={{color:'var(--accent)'}}/>
+          <div className="wordmark">kitty<span className="dot">.</span>music</div>
+        </div>
+
+        <div className="nav-section">
+          <button className={"nav-item" + (activeView.type==='home' ? ' active':'')} onClick={()=>setActiveView({type:'home'})}>
+            <Icon.Home /><span>Home</span>
+          </button>
+          <button className={"nav-item" + (activeView.type==='library' ? ' active':'')} onClick={()=>setActiveView({type:'library'})}>
+            <Icon.Library /><span>Your Library</span>
+          </button>
+        </div>
+
+        <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden-input" onChange={onFileInputChange} />
+        <button className="upload-btn" onClick={()=>fileInputRef.current.click()}>
+          <Icon.Upload /><span>Upload audio</span>
+        </button>
+
+        <div className="sidebar-divider"></div>
+        <div className="playlists-label" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <span>Playlists</span>
+          <button onClick={()=>setNewPlaylistModal(true)} style={{color:'var(--muted)'}} title="New playlist"><Icon.Plus style={{width:14,height:14}}/></button>
+        </div>
+        <div className="playlist-list">
+          {playlists.map(p => (
+            <button key={p.id} className={"playlist-item" + (activeView.type==='playlist' && activeView.id===p.id ? ' active':'')} onClick={()=>setActiveView({type:'playlist', id:p.id})}>
+              <span className="pname">{p.name}</span>
+              <span className="pcount">{p.trackIds.length}</span>
+            </button>
+          ))}
+          {playlists.length === 0 && (
+            <div style={{padding:'4px 12px', fontSize:12, color:'#5c5966'}}>No playlists yet</div>
+          )}
+        </div>
+
+        <div className="sidebar-user">
+          <div className="avatar">{initials(user.name)}</div>
+          <div className="uinfo">
+            <div className="uname">{user.name}</div>
+            <div className="uplan">Free • No ads</div>
+          </div>
+          <button className="logout-btn" title="Log out" onClick={()=>{ audioRef.current.pause(); setIsPlaying(false); setUser(null); }}>
+            <Icon.LogOut />
+          </button>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="main">
+        <div className="topbar">
+          <div className="search-box">
+            <Icon.Search />
+            <input placeholder="Search your tracks..." value={query} onChange={e=>setQuery(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="content">
+          {query.trim() ? (
+            <>
+              <div className="page-title">Search results</div>
+              <div className="page-sub">{filteredTracks.length} match{filteredTracks.length!==1?'es':''} for "{query}"</div>
+              <TrackTable tracks={filteredTracks} currentTrack={currentTrack} isPlaying={isPlaying}
+                onPlay={(id)=>playList(filteredTracks.map(t=>t.id), id)}
+                onTogglePlay={togglePlayPause}
+                onRemove={removeTrack}
+                onAddToPlaylist={setAddToPlaylistTrack}
+              />
+            </>
+          ) : activeView.type === 'home' ? (
+            <HomeView
+              tracks={tracks}
+              playlists={playlists}
+              currentTrack={currentTrack}
+              isPlaying={isPlaying}
+              onPlayAll={(id)=>playList(tracks.map(t=>t.id), id)}
+              onTogglePlay={togglePlayPause}
+              onOpenPlaylist={(id)=>setActiveView({type:'playlist', id})}
+              onUploadClick={()=>fileInputRef.current.click()}
+              dragging={dragging}
+              onRemove={removeTrack}
+              onAddToPlaylist={setAddToPlaylistTrack}
+            />
+          ) : activeView.type === 'library' ? (
+            <>
+              <div className="page-title">Your Library</div>
+              <div className="page-sub">{tracks.length} track{tracks.length!==1?'s':''} uploaded</div>
+              {tracks.length === 0 ? (
+                <EmptyState dragging={dragging} onUploadClick={()=>fileInputRef.current.click()} />
+              ) : (
+                <TrackTable tracks={tracks} currentTrack={currentTrack} isPlaying={isPlaying}
+                  onPlay={(id)=>playList(tracks.map(t=>t.id), id)}
+                  onTogglePlay={togglePlayPause}
+                  onRemove={removeTrack}
+                  onAddToPlaylist={setAddToPlaylistTrack}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <div className="page-title">{activePlaylist?.name}</div>
+              <div className="page-sub">{viewTracks.length} track{viewTracks.length!==1?'s':''}</div>
+              {viewTracks.length === 0 ? (
+                <div className="empty-state">
+                  <Icon.Music />
+                  <h3>This playlist is empty</h3>
+                  <p>Add tracks from your library using the + icon on any track row.</p>
+                  <button className="guest-btn" style={{width:'auto', padding:'10px 18px'}} onClick={()=>setActiveView({type:'library'})}>Browse your library</button>
+                </div>
+              ) : (
+                <TrackTable tracks={viewTracks} currentTrack={currentTrack} isPlaying={isPlaying}
+                  onPlay={(id)=>playList(viewTracks.map(t=>t.id), id)}
+                  onTogglePlay={togglePlayPause}
+                  onRemove={(id)=>removeFromPlaylist(activePlaylist.id, id)}
+                  onAddToPlaylist={setAddToPlaylistTrack}
+                  removeLabel="Remove from playlist"
+                />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Player bar */}
+      <div className="player">
+        <div className="player-track">
+          {currentTrack ? (
+            <>
+              <div className="player-cover"><Icon.Music /></div>
+              <div className="player-meta">
+                <div className="pname">{currentTrack.name}</div>
+                <div className="partist">{currentTrack.artist}</div>
+              </div>
+            </>
+          ) : (
+            <div className="player-empty">Nothing playing yet — upload a track to start.</div>
+          )}
+        </div>
+
+        <div className="player-center">
+          <div className="player-controls">
+            <button className={"ctrl-btn" + (shuffle ? ' active':'')} onClick={()=>setShuffle(s=>!s)} title="Shuffle"><Icon.Shuffle /></button>
+            <button className="ctrl-btn" onClick={goPrev} disabled={!queue.length} title="Previous"><Icon.Prev /></button>
+            <button className="play-btn" onClick={togglePlayPause} disabled={!currentTrack && !tracks.length} title="Play/Pause">
+              {isPlaying ? <Icon.Pause /> : <Icon.Play />}
+            </button>
+            <button className="ctrl-btn" onClick={goNext} disabled={!queue.length} title="Next"><Icon.Next /></button>
+            <button className={"ctrl-btn" + (repeat!=='off' ? ' active':'')} onClick={()=>setRepeat(r=> r==='off'?'all': r==='all'?'one':'off')} title={`Repeat: ${repeat}`}>
+              <Icon.Repeat />
+              {repeat==='one' && <span style={{position:'absolute', fontSize:8, fontWeight:800, marginLeft:-13, marginTop:-2}}>1</span>}
+            </button>
+          </div>
+          <div className="scrub-row">
+            <span className="time">{fmtTime(currentTime)}</span>
+            <Waveform trackId={currentTrack?.id} progress={progress} onSeek={currentTrack ? seekTo : null} />
+            <span className="time right">{fmtTime(duration)}</span>
+          </div>
+        </div>
+
+        <div className="player-right">
+          <div className="vol-row">
+            <button onClick={()=>setMuted(m=>!m)} style={{color:'var(--muted)', flexShrink:0}}>
+              {muted || volume===0 ? <Icon.VolMute/> : <Icon.Vol/>}
+            </button>
+            <input className="vol-slider" type="range" min="0" max="1" step="0.01" value={muted?0:volume}
+              onChange={e=>{ setVolume(parseFloat(e.target.value)); setMuted(false); }} />
+          </div>
+        </div>
+      </div>
+
+      {/* drag overlay */}
+      {dragging && (
+        <div style={{position:'fixed', inset:0, background:'rgba(255,61,138,0.08)', border:'3px dashed var(--accent)', zIndex:60, pointerEvents:'none', margin:12, borderRadius:20}}/>
+      )}
+
+      {/* toast */}
+      <div className={"toast" + (toast ? " show":"")}>{toast}</div>
+
+      {/* new playlist modal */}
+      {newPlaylistModal && (
+        <div className="modal-backdrop" onClick={()=>setNewPlaylistModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <h3>New playlist</h3>
+            <div className="field">
+              <label>Name</label>
+              <input autoFocus value={newPlaylistName} onChange={e=>setNewPlaylistName(e.target.value)}
+                placeholder="My playlist" onKeyDown={e=>e.key==='Enter' && createPlaylist()} />
+            </div>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={()=>setNewPlaylistModal(false)}>Cancel</button>
+              <button className="modal-confirm" onClick={createPlaylist}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* add to playlist modal */}
+      {addToPlaylistTrack && (
+        <div className="modal-backdrop" onClick={()=>setAddToPlaylistTrack(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <h3>Add to playlist</h3>
+            {playlists.length === 0 ? (
+              <p style={{color:'var(--muted)', fontSize:13.5, lineHeight:1.6}}>You don't have any playlists yet. Create one first.</p>
+            ) : (
+              <div style={{display:'flex', flexDirection:'column', gap:4, maxHeight:240, overflowY:'auto'}}>
+                {playlists.map(p => (
+                  <button key={p.id} className="playlist-item" style={{padding:'10px 12px'}}
+                    onClick={()=>addTrackToPlaylist(p.id, addToPlaylistTrack)}>
+                    <span className="pname">{p.name}</span>
+                    <span className="pcount">{p.trackIds.length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={()=>setAddToPlaylistTrack(null)}>Close</button>
+              <button className="modal-confirm" onClick={()=>{ setAddToPlaylistTrack(null); setNewPlaylistModal(true); }}>New playlist</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- HOME VIEW ---------- */
+function HomeView({ tracks, playlists, currentTrack, isPlaying, onPlayAll, onTogglePlay, onOpenPlaylist, onUploadClick, dragging, onRemove, onAddToPlaylist }){
+  const recent = [...tracks].sort((a,b)=>b.addedAt-a.addedAt).slice(0,6);
+  return (
+    <>
+      <div className="page-title">Good to see you 🐾</div>
+      <div className="page-sub">{tracks.length ? 'Pick up where you left off, or upload something new.' : 'Upload your first track to get the party started.'}</div>
+
+      {tracks.length === 0 ? (
+        <EmptyState dragging={dragging} onUploadClick={onUploadClick} />
+      ) : (
+        <>
+          <div className="section-row"><h2>Recently added</h2></div>
+          <TrackTable tracks={recent} currentTrack={currentTrack} isPlaying={isPlaying}
+            onPlay={(id)=>onPlayAll(id)} onTogglePlay={onTogglePlay} onRemove={onRemove} onAddToPlaylist={onAddToPlaylist} compact />
+
+          {playlists.length > 0 && (
+            <>
+              <div className="section-row"><h2>Your playlists</h2></div>
+              <div className="card-grid">
+                {playlists.map(p => (
+                  <div className="pcard" key={p.id} onClick={()=>onOpenPlaylist(p.id)}>
+                    <div className="pcard-art">
+                      <Icon.Music />
+                      <div className="pcard-play"><Icon.Play /></div>
+                    </div>
+                    <div className="pcard-name">{p.name}</div>
+                    <div className="pcard-meta">{p.trackIds.length} track{p.trackIds.length!==1?'s':''}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+/* ---------- EMPTY STATE ---------- */
+function EmptyState({ dragging, onUploadClick }){
+  return (
+    <div className={"empty-state" + (dragging ? " dragging":"")}>
+      <Icon.Upload />
+      <h3>No tracks yet</h3>
+      <p>Drag and drop audio files anywhere on this page, or click below to choose files from your device. MP3, WAV, M4A, OGG, and FLAC all work.</p>
+      <button className="upload-btn" style={{margin:0, width:'auto', padding:'11px 20px'}} onClick={onUploadClick}>
+        <Icon.Upload /><span>Choose audio files</span>
+      </button>
+    </div>
+  );
+}
+
+/* ---------- TRACK TABLE ---------- */
+function TrackTable({ tracks, currentTrack, isPlaying, onPlay, onTogglePlay, onRemove, onAddToPlaylist, removeLabel, compact }){
+  if (!tracks.length) {
+    return <p style={{color:'var(--muted)', fontSize:13.5}}>No tracks here.</p>;
+  }
+  return (
+    <div className="track-table">
+      <div className="track-head">
+        <span>#</span><span>Title</span><span>Album</span><span>Duration</span><span></span>
+      </div>
+      {tracks.map((t, i) => {
+        const isCurrent = currentTrack?.id === t.id;
+        return (
+          <div key={t.id} className={"track-row" + (isCurrent ? " playing":"")}>
+            <div className="track-num">{i+1}</div>
+            <div className="play-overlay">
+              <button onClick={()=> isCurrent ? onTogglePlay() : onPlay(t.id)}>
+                {isCurrent && isPlaying ? <Icon.Pause/> : <Icon.Play/>}
+              </button>
+            </div>
+            <div className="track-info" onClick={()=> isCurrent ? onTogglePlay() : onPlay(t.id)}>
+              <div className="track-cover"><Icon.Music/></div>
+              <div className="track-titles">
+                <div className="track-name">{t.name}</div>
+                <div className="track-artist">{t.artist}</div>
+              </div>
+            </div>
+            <div className="track-album">{t.album}</div>
+            <div className="track-duration">{t.duration ? fmtTime(t.duration) : '--:--'}</div>
+            <div className="track-actions">
+              <button title="Add to playlist" onClick={()=>onAddToPlaylist(t.id)}><Icon.PlusCircle/></button>
+              <button title={removeLabel || 'Remove from library'} onClick={()=>onRemove(t.id)}><Icon.Trash/></button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</body>
+</html>
